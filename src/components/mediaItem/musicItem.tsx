@@ -1,14 +1,16 @@
 import React from 'react';
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import {StyleProp, StyleSheet, View, ViewStyle} from 'react-native';
 import rpx from '@/utils/rpx';
 import ListItem from '../base/listItem';
 
 import LocalMusicSheet from '@/core/localMusicSheet';
-import { showPanel } from '../panels/usePanel';
+import {showPanel} from '../panels/usePanel';
 import TitleAndTag from './titleAndTag';
 import ThemeText from '../base/themeText';
 import TrackPlayer from '@/core/trackPlayer';
-import Icon from '@/components/base/icon.tsx';
+import Icon from '@/components/base/icon';
+import useColors from "@/hooks/useColors";
+import {isSameMediaItem} from "@/utils/mediaUtils";
 
 interface IMusicItemProps {
     index?: string | number;
@@ -20,6 +22,7 @@ interface IMusicItemProps {
     itemPaddingRight?: number;
     left?: () => JSX.Element;
     containerStyle?: StyleProp<ViewStyle>;
+    isCurrentPlaying?: boolean;
 }
 export default function MusicItem(props: IMusicItemProps) {
     const {
@@ -33,6 +36,28 @@ export default function MusicItem(props: IMusicItemProps) {
         left: Left,
         containerStyle,
     } = props;
+
+    const colors = useColors();
+    const isCurrentPlaying = isSameMediaItem(musicItem, TrackPlayer.currentMusic);
+
+    // 高亮样式
+    const highlightStyles = {
+        backgroundColor: isCurrentPlaying ? colors.listActive || colors.primary + '10' : 'transparent',
+        borderLeftWidth: isCurrentPlaying ? rpx(6) : 0,
+        borderLeftColor: isCurrentPlaying ? colors.textHighlight || colors.primary : 'transparent',
+    };
+
+    // 序号高亮样式
+    const indexHighlightStyle = {
+        color: isCurrentPlaying ? colors.textHighlight || colors.primary : colors.text,
+        fontWeight: isCurrentPlaying ? 'bold' as const : 'normal' as const,
+    };
+
+    // 标题高亮样式
+    const titleHighlightStyle = {
+        color: isCurrentPlaying ? colors.textHighlight || colors.primary : colors.text,
+        fontWeight: isCurrentPlaying ? '600' as const : 'normal' as const,
+    };
 
     return (
         <ListItem
@@ -56,7 +81,17 @@ export default function MusicItem(props: IMusicItemProps) {
                     position="none"
                     fixedWidth
                     contentStyle={styles.indexText}>
-                    {index}
+                    {isCurrentPlaying ? (
+                        <View style={styles.playingIndicator}>
+                            <Icon
+                                name="playingIndicator"
+                                size={rpx(28)}
+                                color={colors.textHighlight || colors.primary}
+                            />
+                        </View>
+                    ) : (
+                        index
+                    )}
                 </ListItem.ListItemText>
             ) : null}
             <ListItem.Content
@@ -64,6 +99,8 @@ export default function MusicItem(props: IMusicItemProps) {
                     <TitleAndTag
                         title={musicItem.title}
                         tag={musicItem.platform}
+                        titleStyle={titleHighlightStyle}
+                        isCurrentPlaying={isCurrentPlaying}
                     />
                 }
                 description={
@@ -76,10 +113,24 @@ export default function MusicItem(props: IMusicItemProps) {
                                 size={rpx(22)}
                             />
                         )}
+                        {/*/!* 当前播放标识 *!/*/}
+                        {/*{isCurrentPlaying && (*/}
+                        {/*    <Icon*/}
+                        {/*        style={styles.playingIcon}*/}
+                        {/*        color={colors.textHighlight || colors.primary}*/}
+                        {/*        name="play"*/}
+                        {/*        size={rpx(20)}*/}
+                        {/*    />*/}
+                        {/*)}*/}
                         <ThemeText
                             numberOfLines={1}
                             fontSize="description"
-                            fontColor="textSecondary">
+                            fontColor={isCurrentPlaying ? "textHighlight" : "textSecondary"}
+                            style={{
+                                color: isCurrentPlaying
+                                    ? colors.textHighlight || colors.primary
+                                    : colors.textSecondary
+                            }}>
                             {musicItem.artist}
                             {musicItem.album ? ` - ${musicItem.album}` : ''}
                         </ThemeText>
@@ -116,5 +167,16 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         textAlign: 'center',
         padding: rpx(2)
+    },
+
+    localIcon: {
+        marginRight: rpx(6),
+    },
+    playingIcon: {
+        marginRight: rpx(6),
+    },
+    playingIndicator: {
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });
